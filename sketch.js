@@ -24,22 +24,16 @@ class Cell {
   }
 }
 
-var pixelsWidth = 100;
-var pauseButton, paused;
-var clearButton;
+var pixelsWidth = 100, pixelsHeight = 100;
+var paused = true
 
 function setup() {
-  createCanvas(500, 500);
+  let c = createCanvas(document.body.clientWidth, document.body.clientHeight-50);
+  c.parent("parent")
 
-  pauseButton = createButton('Pause');
-  pauseButton.mousePressed(updatePause);
-
-  clearButton = createButton('Clear');
-  clearButton.mousePressed(clearGrid);
+  cellSize = [width/pixelsWidth, height/pixelsWidth]
 
   colorMode(HSB);
-
-  pause = false;
 
   for (let i = 0; i < pixelsWidth; i++) {
     for (let j = 0; j < pixelsWidth; j++) {
@@ -47,7 +41,27 @@ function setup() {
     }
   }
 }
-const cellSize = 500/pixelsWidth;
+
+document.addEventListener("DOMContentLoaded", () => {
+  let pause = document.getElementById("start")
+  pause.addEventListener("click", () => {
+    if (!paused) {
+      paused = true
+      pause.classList = "btn btn-success"
+      pause.innerHTML = "Start"
+    } else {
+      paused = false
+      pause.classList = "btn btn-danger"
+      pause.innerHTML = "Stop"
+    }
+  })
+
+  let clear = document.getElementById("reset")
+  clear.addEventListener("click", () => {
+    clearGrid()
+  })
+})
+var cellSize;
 
 function draw() {
   if (frameCount % 1 == 0 && !paused) {
@@ -55,21 +69,22 @@ function draw() {
   }
   render();
 
+  if (mouseIsPressed) {
+    noFill()
+    stroke("white")
+    rect(clickpos.x, clickpos.y, mouseX-clickpos.x, mouseY-clickpos.y)
+  }
   if (released) {
     released = false;
-    let newpos = pxToCell(nextPos.x, nextPos.y);
-    let newpos2 = pxToCell(clickpos.x, clickpos.y);
+    let p = pxToCell(nextPos.x, nextPos.y);
+    let p1 = pxToCell(clickpos.x, clickpos.y);
 
-    for (let i = 0; i < Math.abs(newpos2.x - newpos.x); i++) {
-      for (let j = 0; j < Math.abs(newpos2.y - newpos.y); j++) {
-        getCell(i+newpos2.x, j+newpos2.y).on = true;
+    for (let i = 0; i < Math.abs(p1.x - p.x); i++) {
+      for (let j = 0; j < Math.abs(p1.y - p.y); j++) {
+        getCell(i+min(p.x, p1.x), j+min(p.y, p1.y)).on = true;
       }
     }
   }
-}
-
-function updatePause() {
-  paused = !paused;
 }
 
 function getCellIndex(x, y) {
@@ -80,28 +95,16 @@ function getCell(x, y) {
   return grid[getCellIndex(x, y)];
 }
 
-function mouseMoved(e) {
-  mMove(e)
-}
-
-function mouseDragged(e) {
-  mMove(e)
-}
-
-function mMove(e) {
-  nextPos = {x: e.clientX, y: e.clientY};
-}
-
 function pxToCell(x, y) {
-  let newx = Math.round(x/cellSize);
-  let newy = Math.round(y/cellSize);
-
-  return {x: newx, y: newy};
+  let newx = Math.floor(x/cellSize[0]);
+  let newy = Math.floor(y/cellSize[1]);
+  return {x: constrain(newx, 0, pixelsWidth), y: constrain(newy, 0,pixelsHeight)};
 }
 
 var released = false;
 
 function mouseReleased(e) {
+  nextPos = {x: e.clientX, y: e.clientY};
   released = true;
 }
 
@@ -120,11 +123,13 @@ function clearGrid() {
 }
 
 function render() {
+  noStroke()
   for (let cell of grid) {
     if (cell.on) fill(getColor(cell.x, cell.y), 255, 100, 1);
     else fill(0)
-    rect(cell.x*cellSize, cell.y*cellSize, cellSize, cellSize);
+    rect(cell.x*cellSize[0], cell.y*cellSize[1], cellSize[0], cellSize[1]);
   }
+
 }
 
 function getColor(x, y) {
